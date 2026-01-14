@@ -1,0 +1,82 @@
+services:
+  alpine-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: dande-je
+        USER_UID: 1000
+        USER_GID: 1000
+    image: alpine-dev:latest
+    container_name: alpine-dev-workspace
+    hostname: alpine-dev
+    stdin_open: true
+    tty: true
+    
+    # X11 forwarding configuration
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - XAUTHORITY=/tmp/.docker.xauth
+      - QT_X11_NO_MITSHM=1
+      - TERM=xterm-256color
+    
+    volumes:
+      # Workspace for project files
+      - workspace:/home/dande-je/sgoinfre/workspace/
+      
+      # Neovim configuration
+      - nvim-config:/home/dande-je/.config/nvim
+      
+      # Persistent user home data
+      - home-data:/home/dande-je/sgoinfre/workspace/
+      
+      # X11 socket for GUI applications
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ~/.Xauthority:/tmp/.docker.xauth:rw
+      
+      # SSH keys (if needed)
+      - ~/.ssh:/home/dande-je/.ssh:ro
+      
+      # Git configuration (optional, for persistence)
+      # - ~/.gitconfig:/home/developer/.gitconfig:ro
+    
+    # Network configuration
+    network_mode: host
+    
+    # Security options for X11
+    security_opt:
+      - seccomp:unconfined
+    
+    # Capabilities for development
+    cap_add:
+      - SYS_PTRACE
+    
+    # Prevent container from exiting
+    command: tail -f /dev/null
+    
+    restart: unless-stopped
+
+volumes:
+  workspace:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/sgoinfre/workspace/
+    name: alpine-dev-workspace
+    
+  nvim-config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/.config/nvim
+    name: alpine-dev-nvim-config
+    
+  home-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/sgoinfre/
+    name: alpine-dev-home-data
